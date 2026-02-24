@@ -2,7 +2,7 @@ name: INTEGRATION
 
 on:
   push:
-    branches: [develop]
+    branches: [ develop ]
 
 jobs:
   Backend:
@@ -12,15 +12,16 @@ jobs:
         working-directory: backend
 
     services:
-      mariadb:
+      mariadb: 
         image: mariadb:12.1.2
         env:
           MARIADB_ROOT_PASSWORD: toor
           MARIADB_DATABASE: test
-          MARIASDB_USER: test
+          MARIADB_USER: test
           MARIADB_PASSWORD: test
         ports:
           - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
 
     env:
       BDD_HOST: 127.0.0.1
@@ -29,47 +30,48 @@ jobs:
       BDD_PASS: test
 
     steps:
-      - name: Chekout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Database check 
+      - name: Database check
         run: |
           sudo apt install -y mysql-client
           mysql -h 127.0.0.1 --port 3306 -u root -ptoor -e "SHOW DATABASES"
 
       - name: Setup Node
-        uses: actions/setup-nodes@v3
+        uses: actions/setup-node@v3
         with:
           node-version: '20.x'
 
-      - name: Install Dep 
-        run: npm i 
+      - name: Install Dep
+        run: npm i
 
-      - name: Init and Populate BDD 
-        run: |
-          npm run initbdd
-          npm run populate 
-        
+      - name: Init  BDD
+        run: npm run initbdd
+          
+      - name: Populate BDD
+        run : |
+          mysql -u root -ptoor --host 127.0.0.1 --port 3306 --database test < ./test/insert_test_user.sql
 
       - name: Run test and coverage
-        run: npm run test:cov 
+        run: npm run test:cov
 
       - name: Upload Coverage report
         uses: actions/upload-artifact@v4
         with:
           name: back-coverage-report
-          path: backend/coverage 
+          path: backend/coverage
           retention-days: 1
 
   Frontend:
-    needs: [Frontend]
+    needs: [Backend]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
 
     steps:
-      - name: Chekout
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Start Backend
@@ -88,7 +90,7 @@ jobs:
         run: curl http://127.0.0.1:12000
 
       - name: Setup Node
-        uses: actions/setup-nodes@v3
+        uses: actions/setup-node@v3
         with:
           node-version: '20.x'
 
@@ -97,17 +99,10 @@ jobs:
         with:
           runTests: false
           working-directory: frontend
-       
-      - name: Cypress E2E TEST
-        uses: cypress-io/github-action@v6
-        with:
-          install: false
-          start: npm run dev
-          working-directory: frontend 
-     
-      - name: Install Dep 
+
+      - name: Install Dep
         run: npm i
-        
+
       - name: Cypress E2E TEST
         uses: cypress-io/github-action@v6
         with:
@@ -115,12 +110,12 @@ jobs:
           start: npm run dev
           working-directory: frontend
 
-      - name: Generate Coverage report
+      - name: Generate Coverage repport
         run: npm run cypress:cov
 
-      - name: Upload Cy Screen
+      - name: Upload Cy Screen - pour le fun
         if: failure()
-        uses: action/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshot
           path: frontend/cypress/screenshots
@@ -128,21 +123,21 @@ jobs:
 
       - name: Upload Cy Video
         if: always()
-        uses: action/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: cypress-videos
           path: frontend/cypress/videos
-          retention-days: 1 
+          retention-days: 1
 
       - name: Upload Coverage report
-        uses: action/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: cypress-coverage-report
           path: frontend/coverage
           retention-days: 1
 
-      - name: Clean docker
-        if: always() 
+      - name: Clean Docker
+        if: always()
         run: |
           cd ..
           docker compose -f docker-compose-back-build.yml down
