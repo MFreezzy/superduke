@@ -6,10 +6,10 @@ services:
     volumes:
       - cocktail_volume:/var/lib/mysql
     environment:
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: toor
+      MARIADB_DATABASE: bddname
+      MARIADB_USER: roger
+      MARIADB_PASSWORD: regor
     healthcheck:
       test: ['CMD', '/usr/local/bin/healthcheck.sh', '--innodb_initialized']
       start_period: 5s
